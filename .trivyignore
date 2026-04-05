@@ -1,0 +1,8 @@
+# .trivyignore — suppress known false positives or accepted risks
+# Format: CVE-YYYY-NNNNN
+
+# Example: Accept a low-severity CVE with no fix available
+# CVE-2023-XXXXX
+
+# Node.js tooling — dev-only, not in production image
+# CVE-2023-32002

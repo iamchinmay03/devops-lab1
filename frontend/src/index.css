@@ -1,0 +1,213 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS Design Tokens ──────────────────────────────────────────────────── */
+:root {
+  /* Brand */
+  --blue:     #2563eb;
+  --blue-2:   #3b82f6;
+  --blue-3:   #60a5fa;
+  --blue-d:   #1d4ed8;
+  --cyan:     #06b6d4;
+  --cyan-2:   #22d3ee;
+  --violet:   #7c3aed;
+  --violet-2: #8b5cf6;
+  --amber:    #f59e0b;
+  --green:    #10b981;
+  --red:      #ef4444;
+
+  /* Light surface */
+  --bg:       #f8faff;
+  --bg-2:     #eef2ff;
+  --white:    #ffffff;
+  --navy:     #0f172a;
+
+  /* Text */
+  --t1: #0f172a;
+  --t2: #334155;
+  --t3: #64748b;
+  --t4: #94a3b8;
+
+  /* Borders */
+  --border:   #e2e8f0;
+  --border-2: #cbd5e1;
+
+  /* Shadows */
+  --sh-sm:  0 1px 3px rgba(0,0,0,.06), 0 1px 8px rgba(0,0,0,.04);
+  --sh-md:  0 4px 16px rgba(0,0,0,.07), 0 1px 4px rgba(0,0,0,.04);
+  --sh-lg:  0 8px 40px rgba(37,99,235,.12), 0 2px 8px rgba(0,0,0,.06);
+  --sh-xl:  0 20px 60px rgba(37,99,235,.16), 0 4px 16px rgba(0,0,0,.08);
+  --sh-blue: 0 4px 24px rgba(37,99,235,.35);
+
+  /* Fonts */
+  --font-display: 'Geist', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body:    'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+}
+
+/* ─── Reset & Base ───────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--t1);
+  overflow-x: hidden;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Typography ─────────────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--t4); }
+
+/* ─── Buttons ────────────────────────────────────────────────────────────── */
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2
+         px-5 py-2.5 rounded-xl font-semibold text-sm text-white
+         bg-blue-600 hover:bg-blue-700 active:scale-[.98]
+         transition-all duration-200 shadow-sm hover:shadow-md
+         disabled:opacity-50 disabled:cursor-not-allowed;
+}
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-2
+         px-5 py-2.5 rounded-xl font-semibold text-sm
+         bg-white text-slate-700 border border-slate-200
+         hover:bg-slate-50 hover:border-slate-300 active:scale-[.98]
+         transition-all duration-200 shadow-sm;
+}
+.btn-ghost {
+  @apply inline-flex items-center justify-center gap-2
+         px-4 py-2 rounded-xl font-medium text-sm text-slate-600
+         hover:bg-slate-100 active:scale-[.98] transition-all duration-200;
+}
+
+/* ─── Form Inputs ────────────────────────────────────────────────────────── */
+.form-input {
+  @apply w-full px-4 py-3 rounded-xl text-sm font-medium
+         bg-white border border-slate-200 text-slate-900
+         placeholder-slate-400
+         focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400
+         transition-all duration-200;
+}
+.form-select {
+  @apply form-input appearance-none;
+}
+.form-label {
+  @apply block text-sm font-semibold text-slate-700 mb-1.5;
+}
+
+/* ─── Cards ──────────────────────────────────────────────────────────────── */
+.glass-card {
+  background: rgba(255,255,255,0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 1.25rem;
+  box-shadow: var(--sh-md);
+}
+.card {
+  @apply bg-white rounded-2xl border border-slate-200;
+  box-shadow: var(--sh-sm);
+}
+.card-hover {
+  @apply transition-all duration-300;
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--sh-lg);
+}
+
+/* ─── Status Badges ──────────────────────────────────────────────────────── */
+.badge { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold; }
+.badge-green  { @apply badge bg-emerald-50 text-emerald-700 border border-emerald-200; }
+.badge-blue   { @apply badge bg-blue-50 text-blue-700 border border-blue-200; }
+.badge-yellow { @apply badge bg-amber-50 text-amber-700 border border-amber-200; }
+.badge-red    { @apply badge bg-red-50 text-red-700 border border-red-200; }
+.badge-gray   { @apply badge bg-slate-100 text-slate-600 border border-slate-200; }
+.badge-purple { @apply badge bg-violet-50 text-violet-700 border border-violet-200; }
+
+/* ─── Data Table ─────────────────────────────────────────────────────────── */
+.data-table { @apply w-full text-sm; }
+.data-table thead tr { @apply bg-slate-50 border-b border-slate-200; }
+.data-table th { @apply px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider; }
+.data-table td { @apply px-4 py-3 text-slate-700 border-b border-slate-100; }
+.data-table tbody tr { @apply hover:bg-blue-50/30 transition-colors duration-150; }
+
+/* ─── Sidebar Links ──────────────────────────────────────────────────────── */
+.sidebar-link {
+  @apply flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold
+         text-slate-600 hover:bg-blue-50 hover:text-blue-700
+         transition-all duration-200 cursor-pointer;
+}
+.sidebar-link.active { @apply bg-blue-600 text-white shadow-sm; }
+
+/* ─── Stat Card ──────────────────────────────────────────────────────────── */
+.stat-card {
+  @apply card card-hover p-6 flex flex-col gap-2;
+}
+
+/* ─── Page ────────────────────────────────────────────────────────────────── */
+.page-title { @apply text-2xl font-bold text-slate-900 tracking-tight; }
+.page-subtitle { @apply text-sm text-slate-500 mt-1; }
+
+/* ─── Spinner ────────────────────────────────────────────────────────────── */
+.spinner {
+  @apply animate-spin rounded-full border-2 border-slate-200 border-t-blue-600;
+}
+
+/* ─── Gradient text ──────────────────────────────────────────────────────── */
+.grad-text {
+  background: linear-gradient(135deg, var(--blue) 0%, var(--cyan) 50%, var(--violet) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Hero section ───────────────────────────────────────────────────────── */
+.hero-section {
+  background: linear-gradient(160deg, #f0f5ff 0%, #ffffff 45%, #f5f0ff 80%, #f0faff 100%);
+}
+
+/* ─── Glow effect ────────────────────────────────────────────────────────── */
+.glow-blue { box-shadow: 0 0 30px rgba(37,99,235,.25), 0 4px 20px rgba(0,0,0,.1); }
+.glow-on-hover:hover { box-shadow: 0 0 40px rgba(37,99,235,.35), 0 8px 30px rgba(0,0,0,.12); }
+
+/* ─── Animations ─────────────────────────────────────────────────────────── */
+@keyframes fadeUp   { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
+@keyframes fadeDown { from { opacity:0; transform:translateY(-16px) } to { opacity:1; transform:translateY(0) } }
+@keyframes scaleIn  { from { opacity:0; transform:scale(.95) } to { opacity:1; transform:scale(1) } }
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(1.4)} }
+@keyframes gradShift { 0%{background-position:0% 50%} 100%{background-position:300% 50%} }
+@keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+
+.anim-up    { animation: fadeUp 0.55s ease both; }
+.anim-down  { animation: fadeDown 0.55s ease both; }
+.anim-scale { animation: scaleIn 0.4s ease both; }
+
+/* Stagger delays */
+.d1 { animation-delay: 0.05s; }
+.d2 { animation-delay: 0.10s; }
+.d3 { animation-delay: 0.15s; }
+.d4 { animation-delay: 0.20s; }
+.d5 { animation-delay: 0.25s; }
+.d6 { animation-delay: 0.30s; }
+
+/* ─── Tagline animation ──────────────────────────────────────────────────── */
+.tagline-word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.tagline-word.visible { opacity: 1; transform: translateY(0); }

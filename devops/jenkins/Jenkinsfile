@@ -1,0 +1,327 @@
+pipeline {
+    agent any
+
+    environment {
+        // ── Docker Hub ──────────────────────────────────────────────────────
+        DOCKER_HUB_USER    = credentials('DOCKER_HUB_USERNAME')
+        DOCKER_HUB_PASS    = credentials('DOCKER_HUB_PASSWORD')
+        IMAGE_NAME_BACKEND  = "${DOCKER_HUB_USER}/placement-tracker-backend"
+        IMAGE_NAME_FRONTEND = "${DOCKER_HUB_USER}/placement-tracker-frontend"
+        IMAGE_TAG           = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+
+        // ── SonarQube ───────────────────────────────────────────────────────
+        SONAR_HOST_URL    = 'http://sonarqube:9000'
+        SONAR_TOKEN       = credentials('SONAR_TOKEN')
+
+        // ── AWS / K8s ───────────────────────────────────────────────────────
+        AWS_REGION         = 'us-east-1'
+        K8S_NAMESPACE      = 'placement-tracker'
+        ARGOCD_SERVER      = credentials('ARGOCD_SERVER')
+        ARGOCD_TOKEN       = credentials('ARGOCD_TOKEN')
+
+        // ── Notifications ───────────────────────────────────────────────────
+        SLACK_CHANNEL      = '#placement-tracker-ci'
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 60, unit: 'MINUTES')
+        disableConcurrentBuilds()
+        timestamps()
+    }
+
+    stages {
+
+        // ════════════════════════════════════════════════════════════════════
+        stage('📥 Checkout') {
+        // ════════════════════════════════════════════════════════════════════
+            steps {
+                cleanWs()
+                checkout scm
+                script {
+                    env.GIT_AUTHOR = sh(returnStdout: true, script: 'git log -1 --pretty=format:"%an"').trim()
+                    env.GIT_MSG    = sh(returnStdout: true, script: 'git log -1 --pretty=format:"%s"').trim()
+                    echo "🔀 Branch: ${env.GIT_BRANCH} | Author: ${env.GIT_AUTHOR} | Commit: ${env.GIT_COMMIT.take(7)}"
+                }
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        stage('📦 Install Dependencies') {
+        // ════════════════════════════════════════════════════════════════════
+            parallel {
+                stage('Backend Deps') {
+                    steps {
+                        dir('backend') {
+                            sh 'npm ci --prefer-offline'
+                            echo '✅ Backend dependencies installed'
+                        }
+                    }
+                }
+                stage('Frontend Deps') {
+                    steps {
+                        dir('frontend') {
+                            sh 'npm ci --prefer-offline'
+                            echo '✅ Frontend dependencies installed'
+                        }
+                    }
+                }
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        stage('🧪 Run Tests') {
+        // ════════════════════════════════════════════════════════════════════
+            parallel {
+                stage('Backend Tests') {
+                    steps {
+                        dir('backend') {
+                            sh '''
+                                npm test -- --coverage --forceExit --ci \
+                                  --coverageReporters=lcov --coverageReporters=text
+                            '''
+                        }
+                    }
+                    post {
+                        always {
+                            publishHTML([
+                                allowMissing: false,
+                                alwaysLinkToLastBuild: true,
+                                keepAll: true,
+                                reportDir: 'backend/coverage/lcov-report',
+                                reportFiles: 'index.html',
+                                reportName: 'Backend Coverage Report'
+                            ])
+                        }
+                    }
+                }
+                stage('Frontend Tests') {
+                    steps {
+                        dir('frontend') {
+                            sh 'CI=true npm test -- --watchAll=false --coverage'
+                        }
+                    }
+                }
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        stage('🔍 SonarQube Analysis') {
+        // ════════════════════════════════════════════════════════════════════
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        cd backend && \
+                        npx sonar-scanner \
+                          -Dsonar.projectKey=placement-tracker-backend \
+                          -Dsonar.projectName="Placement Tracker Backend" \
+                          -Dsonar.sources=src \
+                          -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+                          -Dsonar.host.url=${SONAR_HOST_URL} \
+                          -Dsonar.login=${SONAR_TOKEN}
+                    '''
+                }
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        stage('⏳ Quality Gate') {
+        // ════════════════════════════════════════════════════════════════════
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        stage('🛡️ Trivy Security Scan') {
+        // ════════════════════════════════════════════════════════════════════
+            steps {
+                sh '''
+                    # Scan filesystem
+                    trivy fs --severity HIGH,CRITICAL \
+                              --format template \
+                              --template "@/usr/local/share/trivy/templates/html.tpl" \
+                              --output trivy-fs-report.html \
+                              --exit-code 0 \
+                              .
+
+                    # Scan backend dependencies
+                    trivy fs --severity CRITICAL \
+                              --exit-code 1 \
+                              ./backend/package.json || true
+
+                    echo "✅ Trivy scan complete"
+                '''
+            }
+            post {
+                always {
+                    publishHTML([
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: '.',
+                        reportFiles: 'trivy-fs-report.html',
+                        reportName: 'Trivy Security Report'
+                    ])
+                }
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        stage('🐳 Docker Build') {
+        // ════════════════════════════════════════════════════════════════════
+            parallel {
+                stage('Build Backend Image') {
+                    steps {
+                        sh """
+                            docker build \
+                              --tag ${IMAGE_NAME_BACKEND}:${IMAGE_TAG} \
+                              --tag ${IMAGE_NAME_BACKEND}:latest \
+                              --cache-from ${IMAGE_NAME_BACKEND}:latest \
+                              --label "build.number=${env.BUILD_NUMBER}" \
+                              --label "git.commit=${env.GIT_COMMIT}" \
+                              ./backend
+                        """
+                        echo "✅ Backend image built: ${IMAGE_NAME_BACKEND}:${IMAGE_TAG}"
+                    }
+                }
+                stage('Build Frontend Image') {
+                    steps {
+                        sh """
+                            docker build \
+                              --tag ${IMAGE_NAME_FRONTEND}:${IMAGE_TAG} \
+                              --tag ${IMAGE_NAME_FRONTEND}:latest \
+                              --build-arg REACT_APP_API_URL=https://api.placetrack.yourdomain.com/api \
+                              --cache-from ${IMAGE_NAME_FRONTEND}:latest \
+                              ./frontend
+                        """
+                        echo "✅ Frontend image built: ${IMAGE_NAME_FRONTEND}:${IMAGE_TAG}"
+                    }
+                }
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        stage('🛡️ Trivy Image Scan') {
+        // ════════════════════════════════════════════════════════════════════
+            steps {
+                sh """
+                    trivy image --severity CRITICAL \
+                                --exit-code 0 \
+                                --format table \
+                                ${IMAGE_NAME_BACKEND}:${IMAGE_TAG}
+
+                    trivy image --severity CRITICAL \
+                                --exit-code 0 \
+                                --format table \
+                                ${IMAGE_NAME_FRONTEND}:${IMAGE_TAG}
+                """
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        stage('📤 Push to Docker Hub') {
+        // ════════════════════════════════════════════════════════════════════
+            steps {
+                sh """
+                    echo ${DOCKER_HUB_PASS} | docker login -u ${DOCKER_HUB_USER} --password-stdin
+
+                    docker push ${IMAGE_NAME_BACKEND}:${IMAGE_TAG}
+                    docker push ${IMAGE_NAME_BACKEND}:latest
+                    docker push ${IMAGE_NAME_FRONTEND}:${IMAGE_TAG}
+                    docker push ${IMAGE_NAME_FRONTEND}:latest
+
+                    docker logout
+                    echo "✅ Images pushed to Docker Hub"
+                """
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        stage('📝 Update K8s Manifests') {
+        // ════════════════════════════════════════════════════════════════════
+            steps {
+                sh """
+                    sed -i 's|image: .*/placement-tracker-backend:.*|image: ${IMAGE_NAME_BACKEND}:${IMAGE_TAG}|g' \
+                      k8s/base/backend-deployment.yaml
+
+                    sed -i 's|image: .*/placement-tracker-frontend:.*|image: ${IMAGE_NAME_FRONTEND}:${IMAGE_TAG}|g' \
+                      k8s/base/frontend-deployment.yaml
+
+                    git config user.email "jenkins@placetrack.com"
+                    git config user.name "Jenkins CI"
+                    git add k8s/
+                    git commit -m "ci: update images to build ${IMAGE_TAG} [skip ci]" || true
+                    git push origin ${env.GIT_BRANCH}
+                    echo "✅ K8s manifests updated"
+                """
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        stage('🚀 ArgoCD Sync') {
+        // ════════════════════════════════════════════════════════════════════
+            steps {
+                sh """
+                    argocd app sync placement-tracker \
+                      --server ${ARGOCD_SERVER} \
+                      --auth-token ${ARGOCD_TOKEN} \
+                      --insecure \
+                      --timeout 300
+
+                    argocd app wait placement-tracker \
+                      --server ${ARGOCD_SERVER} \
+                      --auth-token ${ARGOCD_TOKEN} \
+                      --insecure \
+                      --health \
+                      --timeout 300
+
+                    echo "✅ ArgoCD sync complete"
+                """
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        stage('🔬 Smoke Test') {
+        // ════════════════════════════════════════════════════════════════════
+            steps {
+                sh """
+                    sleep 30
+                    STATUS=\$(curl -s -o /dev/null -w "%{http_code}" https://api.placetrack.yourdomain.com/health)
+                    if [ "\$STATUS" != "200" ]; then
+                        echo "❌ Smoke test failed! Status: \$STATUS"
+                        exit 1
+                    fi
+                    echo "✅ Smoke test passed! App is healthy."
+                """
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+            echo "Pipeline completed — Build #${env.BUILD_NUMBER}"
+        }
+        success {
+            echo """
+            ✅ BUILD SUCCEEDED
+            Branch:  ${env.GIT_BRANCH}
+            Build:   #${env.BUILD_NUMBER}
+            Image:   ${IMAGE_TAG}
+            Author:  ${env.GIT_AUTHOR}
+            Message: ${env.GIT_MSG}
+            """
+        }
+        failure {
+            echo """
+            ❌ BUILD FAILED
+            Branch: ${env.GIT_BRANCH}
+            Build:  #${env.BUILD_NUMBER}
+            Check logs at: ${env.BUILD_URL}
+            """
+        }
+    }
+}

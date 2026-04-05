@@ -1,0 +1,64 @@
+{
+  "title": "PlaceTrack — Application Dashboard",
+  "uid": "placetrack-main",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-3h", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Total HTTP Requests",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [{ "expr": "sum(rate(placement_tracker_http_requests_total[5m]))", "legendFormat": "req/s" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "green", "value": null }] }, "unit": "reqps" } }
+    },
+    {
+      "id": 2, "type": "stat", "title": "5xx Error Rate",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [{ "expr": "sum(rate(placement_tracker_http_requests_total{status_code=~'5..'}[5m]))", "legendFormat": "errors/s" }],
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }, "unit": "reqps" } }
+    },
+    {
+      "id": 3, "type": "stat", "title": "P95 Response Time",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(placement_tracker_http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p95" }],
+      "fieldConfig": { "defaults": { "unit": "s", "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.5 }, { "color": "red", "value": 2 }] } } }
+    },
+    {
+      "id": 4, "type": "stat", "title": "Memory Usage",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "targets": [{ "expr": "process_resident_memory_bytes{job='placement-tracker-backend'} / 1024 / 1024", "legendFormat": "MB" }],
+      "fieldConfig": { "defaults": { "unit": "MiB", "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 256 }, { "color": "red", "value": 450 }] } } }
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Request Rate by Status",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        { "expr": "sum by (status_code) (rate(placement_tracker_http_requests_total[2m]))", "legendFormat": "{{status_code}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Response Time Percentiles",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(placement_tracker_http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.90, sum(rate(placement_tracker_http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p90" },
+        { "expr": "histogram_quantile(0.99, sum(rate(placement_tracker_http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p99" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "Node.js Event Loop Lag",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 12 },
+      "targets": [{ "expr": "placement_tracker_nodejs_eventloop_lag_seconds", "legendFormat": "event loop lag" }],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 8, "type": "barchart", "title": "Requests by Route",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 12 },
+      "targets": [{ "expr": "topk(10, sum by (route) (rate(placement_tracker_http_requests_total[5m])))", "legendFormat": "{{route}}" }]
+    }
+  ]
+}

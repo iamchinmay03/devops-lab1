@@ -1,0 +1,38 @@
+version: '3.9'
+
+# ─── Development overrides ────────────────────────────────────────────────────
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Adds: hot reload for backend, source mounts, debug ports
+
+services:
+  backend:
+    build:
+      target: builder          # Use the builder stage, not production
+    command: ["npx", "nodemon", "src/server.js"]
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./backend/src:/app/src  # Mount source for hot reload
+      - ./backend/logs:/app/logs
+      - /app/node_modules       # Keep container node_modules separate
+    ports:
+      - "5000:5000"
+      - "9229:9229"             # Node.js debugger port
+    command: ["node", "--inspect=0.0.0.0:9229", "src/server.js"]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev  # Use CRA dev server instead of nginx
+    environment:
+      REACT_APP_API_URL: http://localhost:5000/api
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    stdin_open: true
+    tty: true

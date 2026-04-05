@@ -1,0 +1,39 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: placement-tracker-dev
+
+resources:
+  - ../../base/all-resources.yaml
+  - ../../base/backend-deployment.yaml
+
+# ── Dev patches — lighter resource limits ─────────────────────────────────────
+patches:
+  - target:
+      kind: Deployment
+      name: placement-tracker-backend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+
+  - target:
+      kind: Deployment
+      name: placement-tracker-frontend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+
+configMapGenerator:
+  - name: placement-tracker-config
+    behavior: merge
+    literals:
+      - node-env=development
+      - frontend-url=https://dev.placetrack.yourdomain.com
+
+images:
+  - name: yourdockerhubuser/placement-tracker-backend
+    newTag: dev-latest
+  - name: yourdockerhubuser/placement-tracker-frontend
+    newTag: dev-latest
