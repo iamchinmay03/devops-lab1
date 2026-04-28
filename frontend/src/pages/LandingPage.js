@@ -164,7 +164,7 @@ function TaglineAnimator() {
       setTimeout(show, 300);
     }, 5500);
     return () => clearInterval(interval);
-  }, []);
+  }, [words]);
 
   return (
     <div className="flex items-center justify-center flex-wrap gap-x-1 gap-y-1 min-h-[48px] mt-4 mb-5">
