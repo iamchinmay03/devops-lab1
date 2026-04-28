@@ -6,7 +6,7 @@ const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
-const xss = require('xss-clean');
+const xssClean = require('xss-clean');
 const { collectDefaultMetrics, register } = require('prom-client');
 require('dotenv').config();
 
@@ -63,7 +63,7 @@ app.use(globalLimiter);
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(mongoSanitize());
-app.use(xss());
+app.use(xssClean());
 app.use(compression());
 
 // ─── Logging ──────────────────────────────────────────────────────────────────
@@ -105,10 +105,7 @@ const connectDB = async () => {
       ? process.env.MONGODB_URI_PROD
       : process.env.MONGODB_URI;
 
-    await mongoose.connect(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(uri);
     logger.info('✅ MongoDB connected successfully');
   } catch (err) {
     logger.error('❌ MongoDB connection error:', err);
