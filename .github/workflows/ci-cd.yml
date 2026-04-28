@@ -9,7 +9,7 @@ on:
 # Ensure actions run on Node 24 runtime where needed and grant CodeQL access
 permissions:
   contents: read
-  security-events: read
+  security-events: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
