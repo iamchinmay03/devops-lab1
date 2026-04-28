@@ -9,7 +9,7 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  coverageThresholds: {
+  coverageThreshold: {
     global: {
       branches: 50,
       functions: 60,
@@ -20,5 +20,5 @@ module.exports = {
   testTimeout: 30000,
   forceExit: true,
   clearMocks: true,
-  setupFilesAfterFramework: [],
+  setupFilesAfterEnv: [],
 };

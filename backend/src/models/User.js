@@ -76,7 +76,7 @@ const userSchema = new mongoose.Schema({
 });
 
 // ─── Indexes ──────────────────────────────────────────────────────────────────
-userSchema.index({ email: 1 });
+// Note: `unique: true` on `email` already creates an index — avoid duplicate index declaration
 userSchema.index({ role: 1 });
 userSchema.index({ 'studentProfile.branch': 1 });
 userSchema.index({ 'studentProfile.placementStatus': 1 });
