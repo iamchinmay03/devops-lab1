@@ -6,7 +6,13 @@ on:
   pull_request:
     branches: [ main ]
 
+# Ensure actions run on Node 24 runtime where needed and grant CodeQL access
+permissions:
+  contents: read
+  security-events: read
+
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   IMAGE_BACKEND:  ${{ secrets.DOCKERHUB_USERNAME }}/placement-tracker-backend
   IMAGE_FRONTEND: ${{ secrets.DOCKERHUB_USERNAME }}/placement-tracker-frontend
   IMAGE_TAG:      ${{ github.run_number }}-${{ github.sha }}
@@ -79,7 +85,7 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-results.sarif'
 
