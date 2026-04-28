@@ -20,18 +20,20 @@ export default function CoordApplications() {
   const [statusModal, setStatusModal] = useState(null);
   const [statusForm, setStatusForm] = useState({ status:'', note:'', package:'', joiningDate:'' });
 
-  const fetchApps = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ page: filters.page, limit: 25 });
-      if (filters.status) params.set('status', filters.status);
-      const { data } = await api.get(`/applications?${params}`);
-      setApps(data.data);
-      setPagination(data.pagination);
-    } finally { setLoading(false); }
-  };
+  useEffect(() => {
+    const fetchApps = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ page: filters.page, limit: 25 });
+        if (filters.status) params.set('status', filters.status);
+        const { data } = await api.get(`/applications?${params}`);
+        setApps(data.data);
+        setPagination(data.pagination);
+      } finally { setLoading(false); }
+    };
 
-  useEffect(() => { fetchApps(); }, [filters]);
+    fetchApps();
+  }, [filters]);
 
   const openUpdate = (app) => {
     setStatusModal(app);

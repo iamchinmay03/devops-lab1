@@ -14,23 +14,25 @@ export default function StudentCompanies() {
   const [selected, setSelected] = useState(null);
   const [filters, setFilters] = useState({ status: '', industry: '', search: '' });
 
-  const fetchCompanies = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (filters.status) params.set('status', filters.status);
-      if (filters.industry) params.set('industry', filters.industry);
-      if (filters.search) params.set('search', filters.search);
-      const [compRes, appRes] = await Promise.all([
-        api.get(`/companies?${params}`),
-        api.get('/applications/my'),
-      ]);
-      setCompanies(compRes.data.data);
-      setAppliedIds(appRes.data.data.map(a => a.company._id));
-    } finally { setLoading(false); }
-  };
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (filters.status) params.set('status', filters.status);
+        if (filters.industry) params.set('industry', filters.industry);
+        if (filters.search) params.set('search', filters.search);
+        const [compRes, appRes] = await Promise.all([
+          api.get(`/companies?${params}`),
+          api.get('/applications/my'),
+        ]);
+        setCompanies(compRes.data.data);
+        setAppliedIds(appRes.data.data.map(a => a.company._id));
+      } finally { setLoading(false); }
+    };
 
-  useEffect(() => { fetchCompanies(); }, [filters.status, filters.industry]);
+    fetchCompanies();
+  }, [filters.status, filters.industry, filters.search]);
 
   const handleApply = async (company, role) => {
     setApplying(company._id);

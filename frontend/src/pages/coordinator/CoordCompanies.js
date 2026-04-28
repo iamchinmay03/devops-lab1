@@ -4,7 +4,6 @@ import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
-const STATUS_COLORS = { upcoming:'badge-yellow', open:'badge-green', in_progress:'badge-blue', completed:'badge-gray', cancelled:'badge-red' };
 const STATUSES = ['upcoming','open','in_progress','completed','cancelled'];
 
 export default function CoordCompanies() {
@@ -14,19 +13,21 @@ export default function CoordCompanies() {
   const [filters, setFilters] = useState({ status:'', industry:'', page: 1 });
   const [deleting, setDeleting] = useState(null);
 
-  const fetchCompanies = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ page: filters.page });
-      if (filters.status) params.set('status', filters.status);
-      if (filters.industry) params.set('industry', filters.industry);
-      const { data } = await api.get(`/companies?${params}`);
-      setCompanies(data.data);
-      setPagination(data.pagination);
-    } finally { setLoading(false); }
-  };
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ page: filters.page });
+        if (filters.status) params.set('status', filters.status);
+        if (filters.industry) params.set('industry', filters.industry);
+        const { data } = await api.get(`/companies?${params}`);
+        setCompanies(data.data);
+        setPagination(data.pagination);
+      } finally { setLoading(false); }
+    };
 
-  useEffect(() => { fetchCompanies(); }, [filters.status, filters.industry, filters.page]);
+    fetchCompanies();
+  }, [filters.status, filters.industry, filters.page]);
 
   const handleStatusChange = async (id, status) => {
     await api.put(`/companies/${id}`, { hiringStatus: status });

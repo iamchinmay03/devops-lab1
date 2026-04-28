@@ -1,16 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 // ─── SVG Logo Components ──────────────────────────────────────────────────────
-const PlaceNovaLogo = ({ className = '', style = {} }) => (
-  <img
-    src={process.env.PUBLIC_URL + '/favicon.svg'}
-    alt="PlaceNova"
-    className={className}
-    style={style}
-    onError={e => { e.target.style.display = 'none'; }}
-  />
-);
+// ...existing code...
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const FEATURES = [
@@ -157,12 +149,7 @@ const TECH = [
 
 // ─── Animated Tagline ─────────────────────────────────────────────────────────
 function TaglineAnimator() {
-  const words = [
-    { text: 'Track',      color: '#2563eb' },
-    { text: 'Manage',     color: '#06b6d4' },
-    { text: 'Analyze',    color: '#7c3aed' },
-    { text: 'Get Placed', color: '#10b981' },
-  ];
+  const words = TAGLINE_WORDS;
   const [visible, setVisible] = useState([]);
 
   useEffect(() => {
@@ -177,7 +164,7 @@ function TaglineAnimator() {
       setTimeout(show, 300);
     }, 5500);
     return () => clearInterval(interval);
-  }, []); // eslint-disable-line
+  }, []);
 
   return (
     <div className="flex items-center justify-center flex-wrap gap-x-1 gap-y-1 min-h-[48px] mt-4 mb-5">
@@ -198,6 +185,13 @@ function TaglineAnimator() {
     </div>
   );
 }
+
+const TAGLINE_WORDS = [
+  { text: 'Track',      color: '#2563eb' },
+  { text: 'Manage',     color: '#06b6d4' },
+  { text: 'Analyze',    color: '#7c3aed' },
+  { text: 'Get Placed', color: '#10b981' },
+];
 
 // ─── Dashboard Mockup ─────────────────────────────────────────────────────────
 function DashboardMockup() {
@@ -328,7 +322,6 @@ function DashboardMockup() {
 // ─── Main Landing Page ────────────────────────────────────────────────────────
 export default function LandingPage() {
   const [navScrolled, setNavScrolled] = useState(false);
-  const sectionsRef = useRef({});
 
   useEffect(() => {
     const handleScroll = () => setNavScrolled(window.scrollY > 20);
@@ -660,18 +653,20 @@ export default function LandingPage() {
               </div>
               <p className="text-sm text-slate-400 leading-relaxed max-w-[220px]">SRM's automated cloud-based placement tracker — powered by Jenkins, Docker, Kubernetes & AWS.</p>
             </div>
-            {[
-              ['Product', ['Features','Dashboard','Analytics','Companies']],
-              ['DevOps',  ['CI/CD Pipeline','Kubernetes','AWS Setup','Monitoring']],
-              ['Resources',['Documentation','GitHub','Architecture','API Docs']],
-            ].map(([title, links]) => (
-              <div key={title}>
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">{title}</div>
-                <div className="flex flex-col gap-2.5">
-                  {links.map(l => <a key={l} href="#" className="text-sm text-slate-400 hover:text-white transition-colors">{l}</a>)}
+              {[
+                ['Product', ['Features','Dashboard','Analytics','Companies']],
+                ['DevOps',  ['CI/CD Pipeline','Kubernetes','AWS Setup','Monitoring']],
+                ['Resources',['Documentation','GitHub','Architecture','API Docs']],
+              ].map(([title, links]) => (
+                <div key={title}>
+                  <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">{title}</div>
+                  <div className="flex flex-col gap-2.5">
+                    {links.map(l => (
+                      <a key={l} href={`#${l.replace(/\s+/g,'-').toLowerCase()}`} className="text-sm text-slate-400 hover:text-white transition-colors">{l}</a>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
           <div className="border-t border-slate-800 pt-6 flex flex-wrap items-center justify-between gap-4">
             <p className="text-xs text-slate-500">© 2024 PlaceNova — SRM Placement Hub. Automated Cloud-Based Placement Tracker using CI/CD.</p>

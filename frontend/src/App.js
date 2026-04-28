@@ -42,7 +42,7 @@ export default function App() {
 
   useEffect(() => {
     if (isAuthenticated) fetchMe();
-  }, []); // eslint-disable-line
+  }, [isAuthenticated, fetchMe]);
 
   return (
     <BrowserRouter>
