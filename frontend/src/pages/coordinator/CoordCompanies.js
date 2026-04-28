@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -13,26 +13,24 @@ export default function CoordCompanies() {
   const [filters, setFilters] = useState({ status:'', industry:'', page: 1 });
   const [deleting, setDeleting] = useState(null);
 
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams({ page: filters.page });
-        if (filters.status) params.set('status', filters.status);
-        if (filters.industry) params.set('industry', filters.industry);
-        const { data } = await api.get(`/companies?${params}`);
-        setCompanies(data.data);
-        setPagination(data.pagination);
-      } finally { setLoading(false); }
-    };
+  const fetchCompanies = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ page: filters.page });
+      if (filters.status) params.set('status', filters.status);
+      if (filters.industry) params.set('industry', filters.industry);
+      const { data } = await api.get(`/companies?${params}`);
+      setCompanies(data.data);
+      setPagination(data.pagination);
+    } finally { setLoading(false); }
+  }, [filters.page, filters.status, filters.industry]);
 
-    fetchCompanies();
-  }, [filters.status, filters.industry, filters.page]);
+  useEffect(() => { fetchCompanies(); }, [fetchCompanies]);
 
   const handleStatusChange = async (id, status) => {
     await api.put(`/companies/${id}`, { hiringStatus: status });
     toast.success('Status updated');
-    fetchCompanies();
+    await fetchCompanies();
   };
 
   const handleDelete = async (id, name) => {
@@ -41,7 +39,7 @@ export default function CoordCompanies() {
     try {
       await api.delete(`/companies/${id}`);
       toast.success('Company removed');
-      fetchCompanies();
+      await fetchCompanies();
     } finally { setDeleting(null); }
   };
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -20,20 +20,18 @@ export default function CoordApplications() {
   const [statusModal, setStatusModal] = useState(null);
   const [statusForm, setStatusForm] = useState({ status:'', note:'', package:'', joiningDate:'' });
 
-  useEffect(() => {
-    const fetchApps = async () => {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams({ page: filters.page, limit: 25 });
-        if (filters.status) params.set('status', filters.status);
-        const { data } = await api.get(`/applications?${params}`);
-        setApps(data.data);
-        setPagination(data.pagination);
-      } finally { setLoading(false); }
-    };
-
-    fetchApps();
+  const fetchApps = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ page: filters.page, limit: 25 });
+      if (filters.status) params.set('status', filters.status);
+      const { data } = await api.get(`/applications?${params}`);
+      setApps(data.data);
+      setPagination(data.pagination);
+    } finally { setLoading(false); }
   }, [filters]);
+
+  useEffect(() => { fetchApps(); }, [fetchApps]);
 
   const openUpdate = (app) => {
     setStatusModal(app);
@@ -47,7 +45,7 @@ export default function CoordApplications() {
       await api.patch(`/applications/${statusModal._id}/status`, statusForm);
       toast.success('Application status updated!');
       setStatusModal(null);
-      fetchApps();
+      await fetchApps();
     } finally { setUpdating(null); }
   };
 
