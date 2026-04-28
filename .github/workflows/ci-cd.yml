@@ -94,7 +94,7 @@ jobs:
     name: 🐳 Build & Push Images
     needs: [test, security]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && secrets.DOCKERHUB_USERNAME && secrets.DOCKERHUB_TOKEN
     steps:
       - uses: actions/checkout@v4
 
@@ -153,7 +153,7 @@ jobs:
     name: 🚀 Deploy via ArgoCD
     needs: build-push
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && secrets.ARGOCD_SERVER && secrets.ARGOCD_TOKEN && secrets.API_URL
     environment: production
     steps:
       - name: Trigger ArgoCD sync
